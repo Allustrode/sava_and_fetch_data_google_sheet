@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <title>Data Save And Fetch</title>
+</head>
+
+<body class="bg-primary bg-opacity-10">
+    <div class="container py-4 px-1" style="max-width: 50rem;">
+        <h5 class="text-center py-2 text-white bg-secondary text-uppercase fw-bold">Save and Fetch data</h5>
+        <form class="bg-secondary mb-2 bg-opacity-25" name="to_google_sheet">
+            <label for="from_save" class="form-control-lg text-secondary fw-bold">Save Data</label>
+            <fieldset name="form_save" class="p-4">
+                <div id="save_message" class="row px-4 mb-3 text-success">
+                </div>
+                <div class="row mb-3">
+                    <label for="inputEmail3" class="col-sm-2 col-form-label">First Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="firstname" placeholder="Enter First Name" class="form-control" id="first_name_s" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="inputPassword3" class="col-sm-2 col-form-label">Last Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="lastname" placeholder="Enter Last Name" class="form-control" id="last_name_s" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary px-4">Save It</button>
+                <button type="reset" class="btn mx-2 btn-primary">Reset</button>
+            </fieldset>
+        </form>
+
+        <form class="bg-secondary bg-opacity-25" name="from_google_sheet">
+            <label for="form_fetch" class="form-control-lg text-secondary fw-bold">Fetch Data</label>
+
+            <fieldset name="form_fetch" class="p-4">
+                <div id="fetch_error" class="row px-4 mb-3 text-danger">
+                </div>
+                <div class="row mb-3">
+                    <label for="inputEmail3" class="col-sm-2 col-form-label">First Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="firstname" placeholder="Enter First Name To Search" class="form-control" id="first_name">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary px-4 mb-3" id="fetch">Fetch It</button>
+                <div class="row mb-3">
+                    <label for="inputPassword3" class="col-sm-2 col-form-label">Last Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" name="lastname" placeholder="Result Here" disabled class="form-control bg-body" id="last_name">
+                    </div>
+                </div>
+
+            </fieldset>
+        </form>
+    </div>
+</body>
+
+<script>
+    // code to save data
+
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzV5t-A7sPEWdZfBB49D93Sh9Ew881SUbD6NfBVrHjTGcoI23gnjR-hGOCp9PR5R2-uJQ/exec'
+    const form = document.forms['to_google_sheet']
+
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+
+        fetch(scriptURL, { method: 'POST', body: new FormData(form) })
+            .then(document.querySelector("#save_message").innerHTML = "Your data has been saved successfully",
+            setTimeout(() => {
+                document.querySelector("#save_message").innerHTML = "";
+            }, 2000))
+            .catch(error => console.error('Error!', error.message))
+    })
+
+    // code for fetching data
+    const sheetId = '1uIePFKRbyjUc7tOMYwY-qaWEpAv-6bL2ikBvkJdVWig';
+    const base = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?`;
+    const sheetName = 'sheet1';
+
+
+    document.querySelector("#fetch").addEventListener('click', e => {
+        e.preventDefault();
+
+        let first_name = document.querySelector("#first_name").value;
+        const query = encodeURIComponent(`Select B where A='${first_name}'`);
+        const url = `${base}&sheet=${sheetName}&tq=${query}`;
+
+        // if user not entered anything
+        if (first_name == "") {
+        }
+
+        else {
+            // fetching data from URL/sheet
+            fetch(url).then(res => res.text())
+            .then(rep => {
+                // remove additional text and extract only JSON:
+                const jsonData = JSON.parse(rep.substring(47).slice(0, -2));
+
+                // if data is not match then the lenth of rows of data table is 0
+                if (jsonData.table.rows.length == 0) {
+                    document.querySelector("#fetch_error").innerHTML = "Sorry data is not found !";
+                    setTimeout(() => {
+                        document.querySelector("#fetch_error").innerHTML = "";
+                    }, 2000);
+                }
+                // if data is matched then print it to lastname input field
+                else {
+                    document.querySelector("#fetch_error").innerHTML = "";
+                    document.querySelector("#last_name").value = jsonData.table.rows[0].c[0].v;
+                }
+            })
+        }
+    })
+</script>
+
+</html>
